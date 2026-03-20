@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NotesMind — AI Notes Summarizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0e0f13;
+      --surface: #16181f;
+      --surface2: #1e2029;
+      --border: #2a2d3a;
+      --accent: #c8a96e;
+      --accent-dim: #9a7e52;
+      --text: #e8e4dc;
+      --text-muted: #7a7a8a;
+      --green: #4caf82;
+      --red: #e05c5c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 80px;
+    }
+
+    /* Ambient background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 800px; height: 500px;
+      background: radial-gradient(ellipse at center, rgba(200,169,110,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 44px;
+    }
+
+    header .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.6rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    header .logo span { color: var(--accent); }
+
+    header p {
+      margin-top: 8px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 300;
+      letter-spacing: 0.3px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 760px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 9px 12px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--surface2);
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.88rem;
+      line-height: 1.7;
+      resize: vertical;
+      min-height: 200px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus { border-color: var(--accent-dim); }
+    textarea::placeholder { color: var(--text-muted); }
+
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .upload-area:hover { border-color: var(--accent-dim); background: rgba(200,169,110,0.04); }
+
+    .upload-area input[type="file"] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .upload-icon { font-size: 2rem; margin-bottom: 10px; }
+
+    .upload-area p { color: var(--text-muted); font-size: 0.9rem; }
+    .upload-area .file-name { margin-top: 8px; color: var(--accent); font-size: 0.85rem; font-family: 'DM Mono', monospace; }
+
+    .btn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: #0e0f13;
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover { background: #d9bc85; transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Result box */
+    .result-box {
+      margin-top: 28px;
+      display: none;
+    }
+
+    .result-box.show { display: block; }
+
+    .result-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .result-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .result-text {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      font-size: 0.93rem;
+      line-height: 1.8;
+      color: var(--text);
+    }
+
+    /* Divider */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 32px 0;
+    }
+
+    /* Q&A section */
+    .qa-section { width: 100%; max-width: 760px; margin-top: 24px; }
+
+    .qa-section .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .qa-input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .qa-input-row input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.93rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .qa-input-row input:focus { border-color: var(--accent-dim); }
+    .qa-input-row input::placeholder { color: var(--text-muted); }
+
+    .qa-input-row .btn {
+      width: auto;
+      margin-top: 0;
+      padding: 13px 24px;
+      font-size: 0.93rem;
+    }
+
+    .qa-answer {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .qa-answer.show { display: block; }
+
+    .answer-text {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 16px 18px;
+      font-size: 0.93rem;
+      line-height: 1.7;
+    }
+
+    /* Loader */
+    .loader {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(200,169,110,0.3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status { font-size: 0.85rem; color: var(--text-muted); margin-top: 10px; text-align: center; }
+    .error { color: var(--red); }
+
+    /* Fade-in animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-box.show, .qa-answer.show {
+      animation: fadeUp 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">Notes<span>Mind</span></div>
+    <p>Summarize notes from text or PDF — then ask questions on them</p>
+  </header>
+
+  <!-- Summarizer Card -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('text', this)">✏️ Text</button>
+      <button class="tab-btn" onclick="switchTab('pdf', this)">📄 PDF</button>
+    </div>
+
+    <form id="summarize-form" enctype="multipart/form-data">
+      <!-- Text tab -->
+      <div class="tab-panel active" id="tab-text">
+        <textarea name="text" id="text-input" placeholder="Paste your notes here..."></textarea>
+      </div>
+
+      <!-- PDF tab -->
+      <div class="tab-panel" id="tab-pdf">
+        <div class="upload-area" id="pdf-drop">
+          <div class="upload-icon">📄</div>
+          <p>Click to upload a PDF file</p>
+          <div class="file-name" id="pdf-name">No file chosen</div>
+          <input type="file" name="pdf_file" id="pdf-input" accept=".pdf"
+            onchange="document.getElementById('pdf-name').textContent = this.files[0]?.name || 'No file chosen'" />
+        </div>
+      </div>
+
+      <button type="button" class="btn" id="summarize-btn" onclick="doSummarize()">Summarize</button>
+    </form>
+
+    <p class="status" id="status-msg"></p>
+
+    <div class="result-box" id="result-box">
+      <div class="result-label">Summary</div>
+      <div class="result-text" id="summary-output"></div>
+    </div>
+  </div>
+
+  <!-- Q&A Card -->
+  <div class="qa-section">
+    <div class="card">
+      <div class="card-title">💬 Ask About Your Notes</div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 18px;">
+        Summarize notes above first, then ask any question about them.
+      </p>
+      <div class="qa-input-row">
+        <input type="text" id="question-input" placeholder="e.g. What is the main topic discussed?" />
+        <button class="btn" onclick="doAsk()">Ask</button>
+      </div>
+      <p class="status" id="qa-status"></p>
+      <div class="qa-answer" id="qa-answer">
+        <div class="answer-text" id="answer-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeTab = 'text';
+
+    function switchTab(tab, btn) {
+      activeTab = tab;
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    async function doSummarize() {
+      const btn = document.getElementById('summarize-btn');
+      const status = document.getElementById('status-msg');
+      const resultBox = document.getElementById('result-box');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loader"></span> Processing...';
+      status.textContent = '';
+      resultBox.classList.remove('show');
+
+      try {
+        const formData = new FormData();
+
+        if (activeTab === 'text') {
+          const t = document.getElementById('text-input').value.trim();
+          if (!t) { showStatus(status, 'Please enter some text.', true); return; }
+          formData.append('text', t);
+        } else if (activeTab === 'pdf') {
+          const f = document.getElementById('pdf-input').files[0];
+          if (!f) { showStatus(status, 'Please select a PDF file.', true); return; }
+          formData.append('pdf_file', f);
+          showStatus(status, '⏳ Extracting PDF text...');
+        }
+
+        const resp = await fetch('/summarize', { method: 'POST', body: formData });
+        const data = await resp.json();
+
+        if (data.error) { showStatus(status, data.error, true); return; }
+
+        document.getElementById('summary-output').textContent = data.summary;
+        resultBox.classList.add('show');
+        status.textContent = '';
+      } catch (e) {
+        showStatus(status, 'Something went wrong. Is the server running?', true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Summarize';
+      }
+    }
+
+    async function doAsk() {
+      const question = document.getElementById('question-input').value.trim();
+      const status = document.getElementById('qa-status');
+      const answerBox = document.getElementById('qa-answer');
+
+      if (!question) { showStatus(status, 'Please enter a question.', true); return; }
+
+      answerBox.classList.remove('show');
+      showStatus(status, '⏳ Finding answer...');
+
+      try {
+        const resp = await fetch('/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+        const data = await resp.json();
+
+        if (data.error) { showStatus(status, data.error, true); return; }
+
+        document.getElementById('answer-text').textContent = data.answer;
+        answerBox.classList.add('show');
+        status.textContent = '';
+      } catch (e) {
+        showStatus(status, 'Something went wrong.', true);
+      }
+    }
+
+    function showStatus(el, msg, isError = false) {
+      el.textContent = msg;
+      el.className = 'status' + (isError ? ' error' : '');
+    }
+
+    // Allow Enter key to submit question
+    document.getElementById('question-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doAsk();
+    });
+  </script>
+
+</body>
+</html>
