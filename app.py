@@ -8,11 +8,10 @@ app = Flask(__name__)
 
 # Load models (loaded once at startup)
 print("Loading summarization model...")
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-6-6")
 
 print("Loading Q&A model...")
-qa_model = pipeline("question-answering", model="deepset/roberta-base-squad2")
-
+qa_model = pipeline("question-answering", model="deepset/minilm-uncased-squad2")
 print("All models loaded!")
 
 # Store the last extracted text in memory (simple approach for mini project)
