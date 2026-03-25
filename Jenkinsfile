@@ -13,8 +13,8 @@ pipeline {
         }
         stage('Run Docker') {
             steps {
-                bat 'docker stop notes-app-container || true'
-                bat 'docker rm notes-app-container || true'
+                bat 'docker stop notes-app-container & exit 0'
+                bat 'docker rm notes-app-container & exit 0'
                 bat 'docker run -d -p 5000:5000 --name notes-app-container notes-app'
             }
         }
