@@ -7,6 +7,7 @@ import tempfile
 
 app = Flask(__name__)
 
+#t5-small is a smaller version of the T5 model, which is designed for text summarization tasks. It is a good choice for this project because it provides a good balance between performance and resource requirements. The "deepset/minilm-uncased-squad2" model is a question-answering model that is fine-tuned on the SQuAD 2.0 dataset, making it suitable for answering questions based on the summarized notes.
 # Load models (loaded once at startup)
 print("Loading summarization model...")
 summarizer = pipeline("summarization", model="t5-small")
