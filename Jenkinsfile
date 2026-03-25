@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                git 'https://github.com/Hars7hitha/NotesMind.git'
+                git branch: 'main', url: 'https://github.com/Hars7hitha/NotesMind.git'
             }
         }
         stage('Build Docker') {
