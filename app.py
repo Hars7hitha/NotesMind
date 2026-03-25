@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # Load models (loaded once at startup)
 print("Loading summarization model...")
-summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-6-6")
+summarizer = pipeline("summarization", model="t5-small")
 
 print("Loading Q&A model...")
 qa_model = pipeline("question-answering", model="deepset/minilm-uncased-squad2")
