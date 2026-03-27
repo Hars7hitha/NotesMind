@@ -80,7 +80,7 @@ def summarize():
         if len(chunk.split()) < 30:
             summaries.append(chunk)
             continue
-        result = summarizer(chunk, max_length=130, min_length=30, do_sample=False)
+        result = summarizer(chunk, max_length=200, min_length=100, do_sample=False)
         summaries.append(result[0]['summary_text'])
 
     final_summary = " ".join(summaries)
