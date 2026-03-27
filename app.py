@@ -4,7 +4,7 @@ from transformers import pipeline
 import pdfplumber
 import os
 import tempfile
-
+#yoooo
 app = Flask(__name__)
 
 # Load models (loaded once at startup)
