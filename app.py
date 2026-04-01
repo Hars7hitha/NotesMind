@@ -102,7 +102,42 @@ def ask():
     context_chunk = context[:2000]
     result = qa_model(question=question, context=context_chunk)
     return jsonify({"answer": result["answer"], "score": round(result["score"], 3)})
+from youtube_transcript_api import YouTubeTranscriptApi
+import re
 
+@app.route('/summarize-video', methods=['POST'])
+def summarize_video():
+    data = request.get_json()
+    url = data.get("url", "").strip()
+
+    # Extract video ID from URL
+    match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11})", url)
+    if not match:
+        return jsonify({"error": "Invalid YouTube URL"}), 400
+
+    video_id = match.group(1)
+
+    try:
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        text = " ".join([t['text'] for t in transcript])
+    except Exception as e:
+        return jsonify({"error": "Couldn't fetch transcript. Video may not have subtitles."}), 400
+
+    # Store for Q&A
+    extracted_text_store["text"] = text
+
+    # Summarize
+    chunks = chunk_text(text)
+    summaries = []
+    for chunk in chunks:
+        if len(chunk.split()) < 30:
+            summaries.append(chunk)
+            continue
+        result = summarizer(chunk, max_length=130, min_length=30, do_sample=False)
+        summaries.append(result[0]['summary_text'])
+
+    final_summary = " ".join(summaries)
+    return jsonify({"summary": final_summary})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
